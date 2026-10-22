@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SistemaConselhoClasse_RM_v3",
+  "description": "Estrutura de dados - GESTÃO DE CONSELHO - RM (Ronnie Malagutti) - Versão com Laudos, Atestados, Agenda e Arredondamento",
+  "definitions": {
+    "Instituicao": {
+      "type": "object",
+      "properties": {
+        "escola": { "type": "string", "example": "Colégio Estadual Cívico-Militar Alberto Santos Dumont" },
+        "municipio": { "type": "string", "example": "Cafelândia" },
+        "anoLetivo": { "type": "integer", "example": 2026 },
+        "periodo": { "type": "string", "example": "2º Trimestre" },
+        "direcao": { "type": "string" },
+        "equipePedagogica": { "type": "string" },
+        "professorLogado": { "type": "string" }
+      }
+    },
+    "LaudoClinico": {
+      "type": "object",
+      "properties": {
+        "possuiLaudo": { "type": "boolean" },
+        "tipo": { "type": "string", "example": "TDAH / TEA / Dislexia" },
+        "descricao": { "type": "string" },
+        "dataRegistro": { "type": "string" }
+      }
+    },
+    "AtestadoMedico": {
+      "type": "object",
+      "properties": {
+        "ativo": { "type": "boolean" },
+        "tipo": { "type": "string", "enum": ["Atestado Médico", "Viagem Justificada", "Licença"] },
+        "dataInicio": { "type": "string" },
+        "dataFim": { "type": "string" },
+        "diasAfastamento": { "type": "integer" },
+        "motivo": { "type": "string" },
+        "compensadoClassroom": { "type": "boolean", "description": "Se já foram enviadas atividades via Classroom" }
+      }
+    },
+    "AgendaConvocacao": {
+      "type": "object",
+      "properties": {
+        "dataAgendada": { "type": "string" },
+        "horarioAgendado": { "type": "string", "example": "08:30" },
+        "responsavel": { "type": "string" },
+        "status": { "type": "string", "enum": ["Agendado", "Concluído", "Faltou"] }
+      }
+    },
+    "Estudante": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cgm": { "type": "string" },
+        "nome": { "type": "string" },
+        "situacaoMatricula": { "type": "string", "enum": ["Ativo", "Transferido", "Desistente", "Remanejado"] },
+        "laudo": { "$ref": "#/definitions/LaudoClinico" },
+        "atestados": { "type": "array", "items": { "$ref": "#/definitions/AtestadoMedico" } },
+        "agenda": { "$ref": "#/definitions/AgendaConvocacao" },
+        "frequencia": {
+          "type": "object",
+          "properties": {
+            "aulasDadas": { "type": "integer" },
+            "faltas": { "type": "integer" },
+            "faltasConsecutivas": { "type": "integer" }
+          }
+        },
+        "disciplinas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nome": { "type": "string" },
+              "mediaTrimestral": { "type": "number" },
+              "notaRecuperacao": { "type": ["number", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

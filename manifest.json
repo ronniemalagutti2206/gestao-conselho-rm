@@ -1,0 +1,17 @@
+{
+  "name": "GESTÃO DE CONSELHO - RM",
+  "short_name": "Conselho RM",
+  "description": "Sistema de Apoio Pedagógico e Deliberação Escolar - Ronnie Malagutti - Padrão SEED-PR",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231e3a8a'/><text x='50%' y='55%' dominant-baseline='central' text-anchor='middle' fill='%23ffffff' font-size='38' font-family='sans-serif' font-weight='900'>RM</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

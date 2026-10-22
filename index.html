@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GESTÃO DE CONSELHO - RM • Simplificando decisões</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;800;900&family=Cinzel:wght@700;900&display=swap');
+    
+    :root {
+      --app-font-size: 15px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: var(--app-font-size);
+    }
+
+    h1, h2, h3, .brand-font {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .font-certificate {
+      font-family: 'Cinzel', serif;
+    }
+
+    /* Coluna Flutuante / Congelada (Sticky Column) */
+    .sticky-col {
+      position: sticky;
+      left: 0;
+      background-color: #ffffff;
+      z-index: 20;
+      box-shadow: 4px 0 6px -2px rgba(0, 0, 0, 0.08);
+    }
+    .sticky-col-header {
+      position: sticky;
+      left: 0;
+      background-color: #f8fafc;
+      z-index: 30;
+      box-shadow: 4px 0 6px -2px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Estilização para Impressão da Ata e Certificados */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #area-ata-oficial, #area-ata-oficial *,
+      #area-certificado-impressao, #area-certificado-impressao *,
+      #area-boletim-impressao, #area-boletim-impressao * {
+        visibility: visible;
+      }
+      #area-ata-oficial, #area-certificado-impressao, #area-boletim-impressao {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 1cm;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+
+    .chip-btn {
+      transition: all 0.15s ease-in-out;
+      user-select: none;
+    }
+
+    /* Destaque visual chamativo para o Horário de Atividade (HA) */
+    .ha-destaque-card {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .ha-destaque-card::after {
+      content: 'HA';
+      position: absolute;
+      right: 2px;
+      bottom: -4px;
+      font-size: 26px;
+      font-weight: 900;
+      color: rgba(217, 119, 6, 0.18);
+      pointer-events: none;
+    }
+
+    /* Animação suave para alerta de atestado vigente */
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(14, 165, 233, 0.9); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+      50% { border-color: rgba(2, 132, 199, 1); box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.1); }
+    }
+    .atestado-vigente-card {
+      animation: pulse-border 2.5s infinite;
+    }
+
+    /* Animação do banner rotativo */
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .banner-animado {
+      animation: fadeInSlide 0.4s ease-out;
+    }
+
+    /* Scrollbar personalizada para a sidebar */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col md:flex-row antialiased relative overflow-x-hidden">
+
+  <!-- ============================================================ -->
+  <!-- BARRA LATERAL FIXA À ESQUERDA COM MENU SANFONA / ACORDEÃO    -->
+  <!-- ============================================================ -->
+  <aside id="sidebar-principal" class="w-full md:w-80 lg:w-84 bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-white flex flex-col justify-between shrink-0 border-r border-slate-800 shadow-2xl z-40 no-print transition-all duration-300">
+    
+    <!-- Topo da Barra Lateral: Identidade Visual e Menu Sanfona -->
+    <div class="p-4 sm:p-5 flex flex-col flex-1 overflow-y-auto custom-scroll space-y-4">
+      
+      <!-- Cabeçalho Oficial e Logotipo RM -->
+      <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+        <div class="flex items-center space-x-3">
+          <div class="relative group cursor-pointer" onclick="solicitarAcessoModulo('relatorio-pdf')">
+            <img src="logo-rm.jpg" alt="Logo RM" class="w-12 h-12 rounded-full border-2 border-emerald-400 shadow-lg object-cover bg-slate-900 transition-transform group-hover:scale-105">
+          </div>
+          <div>
+            <h1 class="text-sm font-black tracking-tight text-white leading-tight">
+              GESTÃO DE CONSELHO - RM
+            </h1>
+            <p class="text-[11px] font-extrabold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 drop-shadow-sm flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Simplificando decisões</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Botão Fechar em Mobile -->
+        <button onclick="toggleSidebarMobile()" class="md:hidden text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- O BOTÃO EM SUPER DESTAQUE: RELATÓRIOS DO PDF (RCO)       -->
+      <!-- ======================================================== -->
+      <div class="pt-1">
+        <div class="text-[10px] uppercase font-black tracking-wider text-emerald-400 mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-1">
+            <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400 fill-yellow-400"></i>
+            Base Principal de Dados
+          </span>
+          <span class="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-400/30">PDF.js</span>
+        </div>
+
+        <button onclick="solicitarAcessoModulo('relatorio-pdf')" id="btn-sidebar-relatorio-pdf" class="w-full text-left p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 hover:from-emerald-500 hover:to-cyan-600 text-white font-black shadow-xl shadow-emerald-950/50 border-2 border-emerald-400/80 transition-all duration-200 transform hover:scale-[1.01] flex items-center justify-between group">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-slate-950/40 rounded-xl border border-white/20 text-emerald-200 group-hover:text-white shrink-0">
+              <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="text-xs font-black uppercase tracking-wide text-white drop-shadow">Relatórios RCO (PDF)</div>
+              <div class="text-[11px] font-medium text-emerald-100 leading-tight">Alimentação & Dados dos Alunos</div>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-emerald-200 group-hover:translate-x-1 transition-transform shrink-0"></i>
+        </button>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- MENU EM ACORDEÃO LATERAL: SUB-ITENS ABAIXO DO PERFIL     -->
+      <!-- ======================================================== -->
+      <div class="space-y-2 pt-2">
+        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 mb-1 flex items-center justify-between">
+          <span>Módulos de Acesso</span>
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-500"></i>
+        </div>
+
+        <!-- 1. ACORDEÃO: PROFESSORES -->
+        <div class="rounded-2xl border border-slate-800/80 bg-slate-900/40 overflow-hidden">
+          <button onclick="solicitarAcessoModulo('professores')" id="btn-sidebar-professores" class="w-full text-left px-3.5 py-3 transition-all duration-150 flex items-center justify-between group hover:bg-slate-800/80">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl bg-blue-900/40 text-blue-300 border border-blue-500/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-200 group-hover:text-white">Professores</div>
+                <div class="text-[10px] text-slate-400">Portal Docente</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="badge-lock-professores" class="text-slate-400 text-xs">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              </span>
+              <i data-lucide="chevron-down" id="arrow-professores" class="w-4 h-4 text-slate-500 transition-transform"></i>
+            </div>
+          </button>
+
+          <!-- Subitens do Professor (Abrem logo abaixo) -->
+          <div id="submenu-professores" class="hidden px-2 pb-2.5 pt-1 space-y-1 bg-slate-950/50 border-t border-slate-800/60 text-xs">
+            <button onclick="mudarSubAbaProfessor('prazos')" id="subtab-prof-prazos" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="calendar-clock" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>1º Prazos & Saldo de Aulas</span>
+            </button>
+            <button onclick="mudarSubAbaProfessor('pre-conselho')" id="subtab-prof-pre-conselho" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="check-square" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>2º Pré-Conselho (BNCC & Atitudes)</span>
+            </button>
+            <button onclick="mudarSubAbaProfessor('atestado')" id="subtab-prof-atestado" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="stethoscope" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>3º Comunicar Atestado (WhatsApp)</span>
+            </button>
+            <button onclick="mudarSubAbaProfessor('telefone')" id="subtab-prof-telefone" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="user-cog" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>4º Meu Telefone, E-mail & Dados</span>
+            </button>
+            <button onclick="mudarSubAbaProfessor('comunicado')" id="subtab-prof-comunicado" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="send" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span>5º Mensagem Coletiva da Turma</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. ACORDEÃO: EQUIPE PEDAGÓGICA -->
+        <div class="rounded-2xl border border-slate-800/80 bg-slate-900/40 overflow-hidden">
+          <button onclick="solicitarAcessoModulo('pedagogia')" id="btn-sidebar-pedagogia" class="w-full text-left px-3.5 py-3 transition-all duration-150 flex items-center justify-between group hover:bg-slate-800/80">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl bg-emerald-900/40 text-emerald-300 border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="book-open-check" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-200 group-hover:text-white">Equipe Pedagógica</div>
+                <div class="text-[10px] text-slate-400">Apoio & Acompanhamento</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="badge-lock-pedagogia" class="text-slate-400 text-xs">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              </span>
+              <i data-lucide="chevron-down" id="arrow-pedagogia" class="w-4 h-4 text-slate-500 transition-transform"></i>
+            </div>
+          </button>
+
+          <!-- Subitens da Pedagogia (Abrem logo abaixo) -->
+          <div id="submenu-pedagogia" class="hidden px-2 pb-2.5 pt-1 space-y-1 bg-slate-950/50 border-t border-slate-800/60 text-xs">
+            <button onclick="mudarSubAbaPedagogia('alunos')" id="subtab-ped-alunos" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Alunos, Convocação & Riscos</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('boletim')" id="subtab-ped-boletim" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="file-text" class="w-3.5 h-3.5 text-yellow-400"></i>
+              <span>Boletim Escolar Sintético</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('atestados-alunos')" id="subtab-ped-atestados-alunos" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="stethoscope" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Atestados de Alunos (Foto/PDF)</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('comunicacao-lote')" id="subtab-ped-comunicacao-lote" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Comunicação em Lote (WhatsApp)</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('inclusao')" id="subtab-ped-inclusao" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="heart" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span>Inclusão & PDI (Laudos)</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('ha-atendimento')" id="subtab-ped-ha-atendimento" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="target" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Atendimento em HA (Simultaneidade)</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('horario')" id="subtab-ped-horario" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-400"></i>
+              <span>Horário Escolar (6 Aulas & HA)</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('calendario')" id="subtab-ped-calendario" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-orange-400"></i>
+              <span>Calendário Escolar 2026 (Alertas)</span>
+            </button>
+            <button onclick="mudarSubAbaPedagogia('vagas')" id="subtab-ped-vagas" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="clock-alert" class="w-3.5 h-3.5 text-rose-400"></i>
+              <span>Aulas Vagas por Atestado</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. ACORDEÃO: DIREÇÃO ESCOLAR (MASTER) -->
+        <div class="rounded-2xl border border-slate-800/80 bg-slate-900/40 overflow-hidden">
+          <button onclick="solicitarAcessoModulo('direcao')" id="btn-sidebar-direcao" class="w-full text-left px-3.5 py-3 transition-all duration-150 flex items-center justify-between group hover:bg-slate-800/80">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl bg-purple-900/40 text-purple-300 border border-purple-500/30 group-hover:scale-105 transition-transform">
+                <i data-lucide="shield" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-200 group-hover:text-white flex items-center gap-1.5">
+                  <span>Direção</span>
+                  <span class="text-[9px] bg-purple-500/30 text-purple-300 px-1.5 py-0.2 rounded font-mono font-bold">MASTER</span>
+                </div>
+                <div class="text-[10px] text-slate-400">Gestão Global & Atas</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="badge-lock-direcao" class="text-slate-400 text-xs">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              </span>
+              <i data-lucide="chevron-down" id="arrow-direcao" class="w-4 h-4 text-slate-500 transition-transform"></i>
+            </div>
+          </button>
+
+          <!-- Subitens da Direção (Abrem logo abaixo) -->
+          <div id="submenu-direcao" class="hidden px-2 pb-2.5 pt-1 space-y-1 bg-slate-950/50 border-t border-slate-800/60 text-xs">
+            <button onclick="mudarSubAbaDirecao('rendimento')" id="subtab-dir-rendimento" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span>Rendimento Estratificado & Riscos</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('envio-coletivo')" id="subtab-dir-envio-coletivo" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="megaphone" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Envio Coletivo da Escola</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('fila-aprovacao')" id="subtab-dir-fila-aprovacao" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Fila de Aprovação (Mensagens)</span>
+              </span>
+              <span id="badge-contador-pendentes" class="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] hidden">0</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('cargos')" id="subtab-dir-cargos" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Atribuição de Cargos (@escola.pr)</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('professores-lote')" id="subtab-dir-professores-lote" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Cadastro & Importação em Lote</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('horario-geral')" id="subtab-dir-horario-geral" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-400"></i>
+              <span>Grade Geral & Relatório de HAs</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('horario-gestao')" id="subtab-dir-horario-gestao" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="clock-4" class="w-3.5 h-3.5 text-indigo-400"></i>
+              <span>Horários da Gestão (Ped. & Dir.)</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('ata')" id="subtab-dir-ata" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="file-text" class="w-3.5 h-3.5 text-yellow-400"></i>
+              <span>Ata Oficial A4 & Ações Registradas</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('certificados')" id="subtab-dir-certificados" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="award" class="w-3.5 h-3.5 text-yellow-500"></i>
+              <span>Certificados Ouro e Menção</span>
+            </button>
+            <button onclick="mudarSubAbaDirecao('comunicacao')" id="subtab-dir-comunicacao" class="w-full text-left px-3 py-1.5 rounded-xl font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-2">
+              <i data-lucide="phone-call" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>WhatsApp Oficial (+55 45 99151-6382)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. CONFIGURAÇÃO -->
+        <button onclick="solicitarAcessoModulo('configuracao')" id="btn-sidebar-configuracao" class="w-full text-left px-3.5 py-3 rounded-2xl transition-all duration-150 flex items-center justify-between group hover:bg-slate-800/80 border border-transparent">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 group-hover:scale-105 transition-transform">
+              <i data-lucide="settings" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-200 group-hover:text-white">Configuração</div>
+              <div class="text-[10px] text-slate-400">Parâmetros & Backup JSON</div>
+            </div>
+          </div>
+          <span id="badge-lock-configuracao" class="text-slate-400 text-xs">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          </span>
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- Base da Barra Lateral: Card do Usuário Conectado e Acessibilidade -->
+    <div class="p-4 border-t border-slate-800/80 bg-slate-950/60 space-y-3">
+      
+      <!-- Card do Usuário Autenticado -->
+      <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div id="sidebar-avatar-perfil" class="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 shrink-0">
+            <i data-lucide="user-check" class="w-4 h-4"></i>
+          </div>
+          <div class="overflow-hidden leading-tight text-left">
+            <div id="sidebar-nome-usuario" class="text-xs font-bold text-white truncate">
+              Direção Escolar
+            </div>
+            <div id="sidebar-perfil-tag" class="text-[9px] uppercase font-mono font-bold text-purple-400">
+              DIREÇÃO • ACESSO TOTAL
+            </div>
+          </div>
+        </div>
+
+        <button onclick="abrirModalTrocarUsuario()" title="Trocar ou Sair do Usuário" class="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Zoom de Fonte -->
+      <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Acessibilidade</span>
+
+        <div class="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-800">
+          <button onclick="ajustarTamanhoFonte(-1)" title="Diminuir fonte" class="px-2 py-0.5 text-[11px] font-black text-slate-400 hover:text-white transition">
+            A-
+          </button>
+          <span class="text-[9px] px-1 text-slate-600 font-bold">FONTE</span>
+          <button onclick="ajustarTamanhoFonte(1)" title="Aumentar fonte" class="px-2 py-0.5 text-[11px] font-black text-emerald-400 hover:text-white transition">
+            A+
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </aside>
+
+  <!-- ============================================================ -->
+  <!-- ÁREA DE TRABALHO PRINCIPAL (DIREITA / CONTEÚDO DOS MÓDULOS)  -->
+  <!-- ============================================================ -->
+  <div class="flex-1 min-h-screen flex flex-col overflow-y-auto">
+
+    <!-- Topbar Dinâmica com Cor Específica por Perfil -->
+    <header id="topbar-principal" class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white px-4 py-3 shadow-md border-b-4 border-emerald-500 no-print sticky top-0 z-30 flex items-center justify-between gap-4 transition-all duration-300">
+      
+      <div class="flex items-center gap-3">
+        <!-- Botão Abrir Menu Mobile -->
+        <button onclick="toggleSidebarMobile()" class="md:hidden p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <div>
+          <span id="topbar-modulo-badge" class="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-400/30">
+            BASE PRINCIPAL
+          </span>
+          <h2 id="topbar-modulo-titulo" class="text-sm md:text-base font-black text-white">
+            Relatórios RCO (PDF) • Leitor & Base de Dados
+          </h2>
+        </div>
+      </div>
+
+      <!-- Mural Dinâmico de Avisos em Loop (Ticker 5s) -->
+      <div id="ticker-container" class="hidden lg:flex items-center gap-3 bg-slate-950/50 border border-white/10 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-slate-950/70 transition max-w-md shrink-0" onclick="clicarMensagemLoopAtual()" title="Clique para abrir detalhes">
+        <i data-lucide="bell-ring" class="w-4 h-4 text-cyan-400 animate-pulse shrink-0"></i>
+        <div class="overflow-hidden">
+          <div class="flex items-center gap-1.5">
+            <span id="ticker-tag" class="text-[9px] font-black uppercase tracking-wider text-cyan-300 font-mono">CONVOCAÇÃO</span>
+            <span class="text-[10px] text-slate-400">• Alerta do Conselho</span>
+          </div>
+          <p id="ticker-texto" class="text-xs font-semibold text-slate-200 truncate banner-animado">
+            Carregando avisos pedagógicos prioritários...
+          </p>
+        </div>
+      </div>
+
+    </header>
+
+    <!-- Banner de Alerta de Prazos RCO -->
+    <div id="banner-alerta-rco" class="bg-gradient-to-r from-amber-600 via-amber-700 to-orange-700 text-white px-4 py-2 text-xs font-bold shadow-md flex items-center justify-between no-print hidden">
+      <div class="flex items-center gap-2 max-w-4xl">
+        <i data-lucide="bell" class="w-4 h-4 animate-bounce shrink-0"></i>
+        <span id="texto-alerta-rco">Lembrete de Prazos do RCO ativo</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="dispararAlertaRcoWhatsApp()" class="bg-white text-amber-900 hover:bg-amber-100 px-3 py-1 rounded-lg text-xs font-black shadow transition flex items-center gap-1">
+          <i data-lucide="message-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Disparar WhatsApp aos Professores
+        </button>
+        <button onclick="document.getElementById('banner-alerta-rco').classList.add('hidden')" class="text-white hover:text-amber-200 p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notificação Toast Flutuante ("Salvo com Sucesso") -->
+    <div id="toast-aviso" class="fixed bottom-5 right-5 z-50 hidden bg-emerald-600 text-white font-bold px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 border-2 border-emerald-400">
+      <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+      <span id="toast-mensagem">Informação gravada com sucesso!</span>
+    </div>
+
+    <!-- Container do Conteúdo das Páginas -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full relative z-10">
+
+      <!-- ============================================================ -->
+      <!-- PÁGINA 1: RELATÓRIOS DO PDF (RCO) - EM SUPER DESTAQUE        -->
+      <!-- ============================================================ -->
+      <section id="view-relatorio-pdf" class="space-y-6">
+
+        <!-- Banner Explicativo do RCO -->
+        <div class="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 p-6 rounded-3xl text-white shadow-xl border-2 border-emerald-500/60 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="flex items-center gap-4">
+            <div class="p-4 bg-emerald-500/20 text-emerald-400 rounded-2xl shrink-0 border border-emerald-400/30">
+              <i data-lucide="file-spreadsheet" class="w-10 h-10"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-400 text-slate-950 font-mono">
+                  BASE PRINCIPAL DE ALIMENTAÇÃO
+                </span>
+                <span class="text-xs text-slate-300 font-semibold">• Sem digitação manual</span>
+              </div>
+              <h2 class="text-xl md:text-2xl font-black text-white">Relatórios e Importação Oficial do RCO (PDF)</h2>
+              <p class="text-xs md:text-sm text-slate-300 max-w-2xl mt-1">
+                Suba o boletim ou relatório PDF gerado no RCO da SEED-PR. O motor com <strong>PDF.js</strong> lê as turmas, médias e frequências instantaneamente, preservando laudos e históricos médicos.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zona de Upload Drag & Drop -->
+        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div class="dropzone-destaque border-3 border-dashed border-emerald-500 rounded-2xl p-8 text-center cursor-pointer hover:bg-emerald-50/20 transition relative">
+            <input type="file" id="input-pdf-rco" accept=".pdf" onchange="processarArquivoPdfRco(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            <div class="space-y-2 pointer-events-none">
+              <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+              </div>
+              <div class="text-base font-black text-slate-800">Clique para selecionar ou arraste o PDF do RCO aqui</div>
+              <p class="text-xs text-slate-500">Documento processado exclusivamente na memória do seu computador (LGPD Compliance).</p>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso de Leitura -->
+          <div id="progresso-leitura-pdf" class="hidden space-y-2 pt-2">
+            <div class="flex justify-between text-xs font-bold text-slate-700">
+              <span>Lendo páginas do Relatório RCO...</span>
+              <span id="texto-porcentagem-pdf" class="font-mono text-emerald-700">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+              <div id="barra-progresso-pdf" class="bg-emerald-500 h-3 rounded-full transition-all duration-200" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Prévia dos Estudantes Lidos -->
+          <div id="painel-resultado-pdf" class="hidden space-y-4 pt-4 border-t border-slate-200">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-black text-slate-800" id="pdf-resumo-turma">Turma Identificada: --</h3>
+                <p class="text-xs text-slate-500" id="pdf-resumo-qtd">Estudantes extraídos com sucesso.</p>
+              </div>
+              <button onclick="confirmarIntegracaoDadosPdf()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i> Integrar Estudantes à Base do Conselho
+              </button>
+            </div>
+
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl max-h-80 overflow-y-auto">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold sticky top-0 border-b">
+                  <tr>
+                    <th class="p-3">Estudante (CGM)</th>
+                    <th class="p-3 text-center">Presença</th>
+                    <th class="p-3">Médias por Disciplina</th>
+                    <th class="p-3 text-center">Status Preliminar</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-previa-pdf" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- PÁGINA 2: PORTAL DO PROFESSOR                                -->
+      <!-- ============================================================ -->
+      <section id="view-professores" class="hidden space-y-6">
+
+        <!-- SUB-SEÇÃO 2.1: PRAZOS RCO, CALENDÁRIO & SALDO DE AULAS -->
+        <div id="subsecao-prof-prazos" class="space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div class="border-b pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-cyan-700 flex items-center gap-1.5">
+                  <i data-lucide="calendar-clock" class="w-4 h-4"></i> Calendário Oficial 2026 • Cafelândia
+                </span>
+                <h3 class="text-lg font-black text-slate-800">Prazos Oficiais do Trimestre & Saldo de Aulas</h3>
+                <p class="text-xs text-slate-500">Cálculo dinâmico considerando feriados e recessos escolares oficiais.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-600">Simular Disciplina:</span>
+                <select id="prof-simula-disc" onchange="calcularSaldoAulasDocente()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-blue-900">
+                  <option value="Matemática">Matemática (4 aulas/sem)</option>
+                  <option value="Língua Portuguesa">Língua Portuguesa (4 aulas/sem)</option>
+                  <option value="Ciências / Biologia">Ciências / Biologia (2 aulas/sem)</option>
+                  <option value="História">História (2 aulas/sem)</option>
+                  <option value="Geografia">Geografia (2 aulas/sem)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Cards de Contagem Regressiva e Saldo de Aulas -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-950 space-y-1">
+                <div class="text-[10px] font-bold uppercase tracking-wide text-blue-800">Dias Letivos Restantes</div>
+                <div class="text-3xl font-black text-blue-900" id="prof-stat-dias-restantes">-- dias</div>
+                <p class="text-[11px] text-blue-700" id="prof-stat-dias-desc">Para o término do trimestre atual</p>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 space-y-1">
+                <div class="text-[10px] font-bold uppercase tracking-wide text-emerald-800">Saldo de Aulas a Ministrar</div>
+                <div class="text-3xl font-black text-emerald-900" id="prof-stat-aulas-restantes">-- aulas</div>
+                <p class="text-[11px] text-emerald-700">Descontados feriados municipais e recessos</p>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-1">
+                <div class="text-[10px] font-bold uppercase tracking-wide text-rose-800">Data Limite de Fechamento</div>
+                <div class="text-2xl font-black text-rose-900" id="prof-ver-prazo-fechamento">--/--/2026</div>
+                <p class="text-[11px] text-rose-700">Encerramento improrrogável no RCO</p>
+              </div>
+            </div>
+
+            <!-- Linha do Tempo das Datas Oficiais -->
+            <div class="space-y-3 pt-2">
+              <h4 class="text-xs font-black text-slate-700 uppercase tracking-wide">Cronograma Escalonado do Trimestre:</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <div>
+                    <strong class="text-slate-800 block">1. Avaliações Regulares:</strong>
+                    <span class="text-slate-500 text-[11px]">Aplicação de provas do trimestre</span>
+                  </div>
+                  <span id="prof-ver-prazo-avaliacoes" class="font-mono font-black text-blue-900">16/10/2026</span>
+                </div>
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <div>
+                    <strong class="text-slate-800 block">2. Recuperação Paralela:</strong>
+                    <span class="text-slate-500 text-[11px]">Novas oportunidades de aprendizagem</span>
+                  </div>
+                  <span id="prof-ver-prazo-recup" class="font-mono font-black text-amber-800">23/10/2026</span>
+                </div>
+                <div class="p-3 rounded-xl border-2 border-rose-300 bg-rose-50 flex items-center justify-between">
+                  <div>
+                    <strong class="text-rose-950 block">3. Conselho de Classe:</strong>
+                    <span class="text-rose-700 text-[11px]">Reunião e deliberação coletiva</span>
+                  </div>
+                  <span id="prof-ver-prazo-conselho" class="font-mono font-black text-rose-900">19/09/2026</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 2.2: PRÉ-CONSELHO DOCENTE (BNCC & ATITUDES) -->
+        <div id="subsecao-prof-pre-conselho" class="hidden space-y-6">
+
+          <!-- Painel Superior de Seleção -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 border-b pb-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Turma em Avaliação</label>
+                <select id="pc-turma-select" onchange="carregarPreConselhoTurma()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                  <option value="1º - FD">1º - FD (Formação Docente)</option>
+                  <option value="1ºA ADM">1ºA ADM (Téc. Administração)</option>
+                  <option value="2ºA ADM">2ºA ADM (Téc. Administração)</option>
+                  <option value="1º Manhã">1º Manhã (Ensino Médio Regular)</option>
+                  <option value="9º Ano A">9º Ano A (Ensino Fundamental)</option>
+                  <option value="9º Ano B">9º Ano B (Ensino Fundamental)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Disciplina</label>
+                <select id="pc-disciplina-select" onchange="atualizarAreaConhecimentoPorDisciplina(); carregarPreConselhoTurma();" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                  <option value="Matemática">Matemática</option>
+                  <option value="Língua Portuguesa">Língua Portuguesa</option>
+                  <option value="Ciências / Biologia">Ciências / Biologia</option>
+                  <option value="História">História</option>
+                  <option value="Geografia">Geografia</option>
+                  <option value="Física">Física</option>
+                  <option value="Química">Química</option>
+                  <option value="Estratégia de Marketing">Estratégia de Marketing (ADM)</option>
+                  <option value="Prática de Formação">Prática de Formação (Docente)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-blue-900 mb-1">Área / Curso</label>
+                <select id="pc-area-conhecimento" onchange="renderizarChipsPorAreaConhecimento()" class="w-full bg-blue-50 border border-blue-300 rounded-xl px-3 py-2 text-xs font-bold text-blue-950">
+                  <option value="matematica">4. Matemática e suas Tecnologias</option>
+                  <option value="natureza">2. Ciências da Natureza e suas Tecnologias</option>
+                  <option value="linguagens">3. Linguagens, Códigos e suas Tecnologias</option>
+                  <option value="humanas">4. Ciências Humanas e suas Tecnologias</option>
+                  <option value="tecadm">5. Técnico em Administração</option>
+                  <option value="formdocente">6. Formação de Docentes</option>
+                  <option value="agronegocio">7. Técnico em Agronegócio</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Professor(a)</label>
+                <input type="text" id="pc-professor-nome" value="Ronnie Malagutti" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold" readonly>
+              </div>
+            </div>
+
+            <!-- O QUE O PROFESSOR FEZ: 6 PRÁTICAS DA ÁREA + 5 PRÁTICAS GERAIS -->
+            <div class="space-y-3">
+              <label class="block text-xs font-black text-slate-800 flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                  Metodologias e Práticas Docentes Aplicadas ("O que o professor fez"):
+                </span>
+                <span class="text-[11px] text-slate-400 font-normal">Toque nos chips para ativar/desativar</span>
+              </label>
+
+              <!-- Bloco A: Práticas Específicas da Área Selecionada -->
+              <div class="space-y-1.5">
+                <span id="label-area-especifica" class="text-[10px] font-mono font-bold uppercase text-blue-900 bg-blue-100 px-2 py-0.5 rounded inline-block">
+                  Práticas Específicas de Matemática e suas Tecnologias
+                </span>
+                <div class="flex flex-wrap gap-2" id="chips-praticas-area"></div>
+              </div>
+
+              <!-- Bloco B: Práticas Gerais e Interdisciplinares (Comum a qualquer matéria) -->
+              <div class="space-y-1.5 pt-2 border-t border-slate-100">
+                <span class="text-[10px] font-mono font-bold uppercase text-purple-900 bg-purple-100 px-2 py-0.5 rounded inline-block">
+                  Práticas Gerais e Interdisciplinares
+                </span>
+                <div class="flex flex-wrap gap-2" id="chips-praticas-gerais"></div>
+              </div>
+            </div>
+
+            <!-- O QUE O ALUNO NÃO APRENDEU -->
+            <div class="space-y-2 pt-2 border-t border-slate-100">
+              <label class="block text-xs font-black text-rose-800 flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i>
+                  O que o aluno não aprendeu (Dificuldades Centrais da Área):
+                </span>
+                <span id="label-area-dificuldades" class="text-[10px] font-mono font-bold uppercase text-rose-900 bg-rose-100 px-2 py-0.5 rounded">
+                  Matemática
+                </span>
+              </label>
+              <div class="flex flex-wrap gap-2" id="chips-o-que-aluno-nao-aprendeu"></div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Habilidades e Conteúdos Específicos da Disciplina:</label>
+              <input type="text" id="pc-especifico-disciplina" value="Reconhecimento de figuras espaciais, funções trigonométricas e resolução de problemas." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-medium">
+            </div>
+          </div>
+
+          <!-- Mapeamento Nominal com Blocos: 1. Clima Positivo e 2. Desafios/Ocorrências -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <h3 class="text-sm font-black text-blue-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i>
+                  Mapeamento Nominal: Comportamento, Clima de Sala & Atitudes
+                </h3>
+                <p class="text-xs text-slate-500">
+                  Tags verdes/azuis para <strong class="text-emerald-700">Atitudes Positivas</strong> e tags quentes para <strong class="text-rose-700">Ocorrências & Ajustes</strong>.
+                </p>
+              </div>
+
+              <button type="button" onclick="marcarTodosAlunosRegulares()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+                Marcar Todos como Regulares / Engajados
+              </button>
+            </div>
+
+            <!-- Tabela de Avaliação Nominal -->
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b">
+                  <tr>
+                    <th class="p-3 w-48">Estudante</th>
+                    <th class="p-3 text-center w-20">Faltas</th>
+                    <th class="p-3 text-center w-20">Média</th>
+                    <th class="p-3 w-72">1. Clima & Atitude Positiva (Engajamento)</th>
+                    <th class="p-3">2. Ocorrências & Ajustes de Conduta</th>
+                  </tr>
+                </thead>
+                <tbody id="pc-tabela-alunos" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3">
+              <span class="text-xs text-slate-500 flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+                Apontamentos gravados em tempo real na base oficial do Conselho.
+              </span>
+              <button type="button" onclick="salvarRegistrosPreConselho()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i>
+                Salvar Avaliação Docente
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SUB-SEÇÃO 2.3: COMUNICAR ATESTADO DOCENTE (BOTÃO ÚNICO) -->
+        <div id="subsecao-prof-atestado" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-2xl mx-auto">
+            <div class="border-b pb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-cyan-700 flex items-center gap-1.5">
+                <i data-lucide="stethoscope" class="w-4 h-4"></i> Comunicação Oficial de Afastamento
+              </span>
+              <h3 class="text-base font-black text-slate-800">Registrar Atestado Médico Docente</h3>
+              <p class="text-xs text-slate-500">Notificação formal enviada instantaneamente para a Direção e Equipe Pedagógica.</p>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Professor(a) Afastado(a)</label>
+                <input type="text" id="atestado-docente-nome" value="Ronnie Malagutti" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold" readonly>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Data Início</label>
+                  <input type="date" id="atestado-docente-inicio" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Data Término</label>
+                  <input type="date" id="atestado-docente-fim" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Motivo / CID / Observação Médica</label>
+                <input type="text" id="atestado-docente-motivo" placeholder="Ex: Tratamento de saúde / Repouso médico" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Vinculação de Atividades para as Turmas (Google Classroom / Tarefas):</label>
+                <textarea id="atestado-docente-classroom" rows="3" placeholder="Ex: Deixada lista de exercícios de fixação no Google Classroom sobre geometria espacial para as turmas 1º FD e 9º A." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs"></textarea>
+              </div>
+
+              <!-- BOTÃO ÚNICO CONFORME SOLICITADO -->
+              <div class="pt-2">
+                <button type="button" onclick="lancarAtestadoDocente()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+                  <i data-lucide="message-circle" class="w-4 h-4 text-emerald-200"></i>
+                  <span>Gravar e Enviar WhatsApp à Gestão e Eq. Pedagógica</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 2.4: MEU TELEFONE, E-MAIL & DADOS PESSOAIS -->
+        <div id="subsecao-prof-telefone" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-xl mx-auto">
+            <div class="border-b pb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                <i data-lucide="user-check" class="w-4 h-4"></i> Prontuário do Servidor
+              </span>
+              <h3 class="text-base font-black text-slate-800">Meus Dados Cadastrais Institucionais</h3>
+              <p class="text-xs text-slate-500">Autoatualização do contato WhatsApp e e-mail institucional.</p>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nome Completo *</label>
+                <input type="text" id="meu-nome-input" value="Ronnie Malagutti" class="w-full bg-slate-100 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800" readonly>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Telefone WhatsApp (com DDD) *</label>
+                  <input type="text" id="meu-telefone-input" placeholder="45991516382" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-mono font-bold">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">E-mail Institucional (@escola.pr.gov.br) *</label>
+                  <input type="email" id="meu-email-input" placeholder="ronnie.malagutti@escola.pr.gov.br" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-mono font-bold">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Data de Nascimento</label>
+                  <input type="date" id="meu-nasc-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">RG</label>
+                  <input type="text" id="meu-rg-input" placeholder="0.000.000-0" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-mono">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">CPF</label>
+                  <input type="text" id="meu-cpf-input" placeholder="000.000.000-00" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-mono">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Endereço Residencial</label>
+                <input type="text" id="meu-endereco-input" placeholder="Rua, número, bairro e cidade" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs">
+              </div>
+
+              <button onclick="salvarMeuProprioTelefoneDocente()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i> Salvar Minhas Informações
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 2.5: MENSAGEM COLETIVA DA TURMA (COM REGISTRO EM ATA) -->
+        <div id="subsecao-prof-comunicado" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-2xl mx-auto">
+            <div class="border-b pb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                <i data-lucide="send" class="w-4 h-4"></i> Comunicação Pedagógica Docente
+              </span>
+              <h3 class="text-base font-black text-slate-800">Enviar Mensagem Coletiva para a Turma</h3>
+              <p class="text-xs text-slate-500">
+                Dispara mensagem via WhatsApp e registra automaticamente como ação pedagógica na <strong>Ficha do Aluno</strong> e com citação formal na <strong>Ata do Conselho</strong>.
+              </p>
+            </div>
+
+            <div class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Turma Destinatária:</label>
+                  <select id="comunicado-turma-select" onchange="carregarEstudantesParaComunicado()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                    <option value="1º - FD">1º - FD (Formação Docente)</option>
+                    <option value="1ºA ADM">1ºA ADM (Téc. Administração)</option>
+                    <option value="9º Ano A">9º Ano A</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Destinatários:</label>
+                  <select id="comunicado-alvo-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                    <option value="todos">Todos (Alunos e Pais)</option>
+                    <option value="pais">Apenas Responsáveis</option>
+                    <option value="alunos">Apenas Estudantes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Título / Teor da Ação (será citado na Ata):</label>
+                <input type="text" id="comunicado-titulo" value="Lembrete de Entrega de Trabalho e Recuperação Paralela" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Mensagem Formatada:</label>
+                <textarea id="comunicado-texto" rows="4" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs">Olá! Informamos que as atividades complementares de Matemática já estão disponíveis no Google Classroom. Favor atentar aos prazos.</textarea>
+              </div>
+
+              <!-- Lista de Alunos da Turma com Seleção Individual / Todos -->
+              <div class="space-y-2 pt-2 border-t">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-700">Selecione os estudantes destinatários:</span>
+                  <label class="flex items-center gap-1.5 cursor-pointer font-bold text-blue-900">
+                    <input type="checkbox" id="chk-comunicado-todos" onchange="toggleSelecionarTodosComunicado(this)" checked class="rounded text-blue-600">
+                    <span>Selecionar Todos</span>
+                  </label>
+                </div>
+                <div id="lista-estudantes-comunicado" class="max-h-40 overflow-y-auto space-y-1 p-2 bg-slate-50 rounded-xl border border-slate-200 text-xs"></div>
+              </div>
+
+              <button onclick="dispararComunicadoDocenteWhatsApp()" class="w-full bg-purple-900 hover:bg-purple-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-4 h-4 text-purple-300"></i> Disparar WhatsApp e Registrar na Ata do Conselho
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- PÁGINA 3: PAINEL DA EQUIPE PEDAGÓGICA                        -->
+      <!-- ============================================================ -->
+      <section id="view-pedagogia" class="hidden space-y-6">
+
+        <!-- SUB-SEÇÃO 3.1: ALUNOS, CONVOCAÇÃO & PROJEÇÕES DE RISCO -->
+        <div id="subsecao-ped-alunos" class="space-y-6">
+
+          <!-- Barra de Filtros e Projeções -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              <select id="filtro-turma" onchange="renderizarAlunos()" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl px-3 py-2">
+                <option value="TODAS">Todas as Turmas</option>
+                <option value="1º - FD">1º - FD (Formação Docente)</option>
+                <option value="1ºA ADM">1ºA ADM</option>
+                <option value="9º Ano A">9º Ano A</option>
+                <option value="9º Ano B">9º Ano B</option>
+              </select>
+
+              <select id="filtro-risco" onchange="renderizarAlunos()" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-xl px-3 py-2">
+                <option value="TODOS">Todos os Alertas</option>
+                <option value="RISCO_REPROVACAO">🚨 Projeção de Risco de Reprovação</option>
+                <option value="DESTAQUE">🌟 Bom Rendimento (Certificados)</option>
+                <option value="CRITICO">⚠️ Crítico / Alto Risco</option>
+                <option value="ALERTA">⚡ Em Alerta / Atenção</option>
+                <option value="ATESTADO">🩺 Com Atestado Vigente</option>
+                <option value="LAUDO">🧠 Com Laudo Clínico</option>
+              </select>
+
+              <div class="relative flex-1 md:w-60">
+                <input type="text" id="filtro-busca" oninput="renderizarAlunos()" placeholder="Buscar por Nome ou CGM..." class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-xl pl-9 pr-3 py-2">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="alternarModoExibicao('nichos')" id="btn-modo-nichos" class="px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 bg-white text-blue-900 shadow-sm border border-slate-200">
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-blue-700"></i> Nichos
+              </button>
+              <button onclick="alternarModoExibicao('lista')" id="btn-modo-lista" class="px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 border border-slate-200">
+                <i data-lucide="table" class="w-3.5 h-3.5 text-slate-500"></i> Lista
+              </button>
+              <button id="btn-novo-aluno" onclick="abrirModalEstudante()" class="bg-blue-900 hover:bg-blue-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition">
+                <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i> Novo Aluno
+              </button>
+            </div>
+          </div>
+
+          <!-- MODO 1: Grid de Nichos -->
+          <div id="container-nichos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+          <!-- MODO 2: Tabela / Planilha -->
+          <div id="container-lista" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto max-w-full">
+              <table class="w-full text-xs text-left border-collapse">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-300">
+                  <tr>
+                    <th class="p-3.5 sticky-col-header w-64">Estudante (CGM)</th>
+                    <th class="p-3.5 text-center w-28">Turma</th>
+                    <th class="p-3.5 text-center w-24">Faltas (%)</th>
+                    <th class="p-3.5 text-center w-36">Disciplinas < 6.0</th>
+                    <th class="p-3.5 text-center w-40">Projeção de Risco</th>
+                    <th class="p-3.5 text-center w-32">Atestado / Laudo</th>
+                    <th class="p-3.5 text-center w-28">Convocação</th>
+                    <th class="p-3.5 text-center w-28">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-lista-corpo" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SUB-SEÇÃO 3.2: BOLETIM ESCOLAR SINTÉTICO -->
+        <div id="subsecao-ped-boletim" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-yellow-700 flex items-center gap-1.5">
+                  <i data-lucide="file-text" class="w-4 h-4"></i> Documento Oficial de Rendimento
+                </span>
+                <h3 class="text-lg font-black text-slate-800">Boletim Escolar Sintético</h3>
+                <p class="text-xs text-slate-500">Notas, frequências, conceitos deliberados no Conselho e observações do RCO.</p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <select id="boletim-filtro-turma" onchange="renderizarListaBoletins()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800">
+                  <option value="1º - FD">1º - FD</option>
+                  <option value="9º Ano A">9º Ano A</option>
+                </select>
+                <button onclick="imprimirBoletimAtual()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+                  <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Imprimir Boletim (A4)
+                </button>
+              </div>
+            </div>
+
+            <!-- Área de Visualização do Boletim -->
+            <div id="area-boletim-impressao" class="p-6 md:p-8 bg-white border border-slate-300 rounded-2xl space-y-4 text-slate-900">
+              <div class="border-b-2 border-slate-800 pb-3 flex justify-between items-center">
+                <div>
+                  <h4 class="font-black text-base uppercase" id="bol-escola">Colégio Estadual Cívico-Militar</h4>
+                  <p class="text-xs text-slate-600" id="bol-municipio">Paraná - SEED</p>
+                </div>
+                <div class="text-right text-xs font-mono">
+                  <span class="font-bold block">BOLETIM ESCOLAR INDIVIDUAL</span>
+                  <span id="bol-periodo">2º Trimestre / 2026</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div><strong>Estudante:</strong> <span id="bol-nome">Amanda Oliveira Rengel</span></div>
+                <div><strong>CGM:</strong> <span id="bol-cgm">142981033</span></div>
+                <div><strong>Turma:</strong> <span id="bol-turma">1º - FD</span></div>
+                <div><strong>Frequência:</strong> <span id="bol-freq" class="font-bold text-emerald-700">84.2%</span></div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left border-collapse border border-slate-300">
+                  <thead class="bg-slate-100 font-bold border-b border-slate-300">
+                    <tr>
+                      <th class="border border-slate-300 p-2">Componente Curricular</th>
+                      <th class="border border-slate-300 p-2 text-center w-24">1º Trim.</th>
+                      <th class="border border-slate-300 p-2 text-center w-24">2º Trim.</th>
+                      <th class="border border-slate-300 p-2 text-center w-24">Recup.</th>
+                      <th class="border border-slate-300 p-2 text-center w-32">Situação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bol-tabela-notas" class="divide-y divide-slate-200"></tbody>
+                </table>
+              </div>
+
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                <strong>Observações Pedagógicas & Encaminhamentos do Conselho:</strong>
+                <p id="bol-observacoes" class="text-slate-700 italic">Estudante em acompanhamento pedagógico individualizado. Apoio no Mais Aprendizagem.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 3.3: ATESTADOS DE ALUNOS (FOTO / PDF) -->
+        <div id="subsecao-ped-atestados-alunos" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="border-b pb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-cyan-700 flex items-center gap-1.5">
+                  <i data-lucide="stethoscope" class="w-4 h-4"></i> Gestão de Afastamentos Médicos
+                </span>
+                <h3 class="text-base font-black text-slate-800">Registrar Atestado do Estudante</h3>
+                <p class="text-xs text-slate-500">Entrada manual ou por foto/PDF com notificação imediata aos professores da turma.</p>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Selecione o Estudante:</label>
+                  <select id="atestado-aluno-select" onchange="sincronizarTurmaAtestadoAluno()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"></select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Turma Vinculada:</label>
+                    <input type="text" id="atestado-aluno-turma" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-blue-900" readonly>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Motivo / CID:</label>
+                    <input type="text" id="atestado-aluno-motivo" placeholder="Ex: CID J06 / Repouso" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Data Início</label>
+                    <input type="date" id="atestado-aluno-inicio" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Data Fim</label>
+                    <input type="date" id="atestado-aluno-fim" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Anexar Documento (PDF ou Foto):</label>
+                  <input type="file" id="atestado-aluno-arquivo" accept=".pdf,image/*" onchange="processarArquivoAtestadoAluno(event)" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs">
+                  <span id="atestado-aluno-preview-status" class="text-[10px] text-slate-500 block mt-1">Nenhum arquivo anexado.</span>
+                </div>
+
+                <button type="button" onclick="salvarAtestadoAluno()" class="w-full bg-cyan-700 hover:bg-cyan-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4"></i> Salvar Atestado do Estudante
+                </button>
+              </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-4">
+              <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-base font-black text-slate-800 flex items-center gap-2 border-b pb-3">
+                  <i data-lucide="clipboard-list" class="w-5 h-5 text-cyan-700"></i>
+                  Atestados Médicos de Alunos Vigentes
+                </h3>
+                <div id="lista-atestados-alunos-corpo" class="space-y-3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 3.4: COMUNICAÇÃO EM LOTE (WHATSAPP PEDAGOGIA) -->
+        <div id="subsecao-ped-comunicacao-lote" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-2xl mx-auto">
+            <div class="border-b pb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                <i data-lucide="message-square" class="w-4 h-4"></i> Comunicação Institucional em Lote
+              </span>
+              <h3 class="text-base font-black text-slate-800">Disparo Pedagógico de Mensagens</h3>
+              <p class="text-xs text-slate-500">Envio de comunicados via WhatsApp com textos prontos ou imagens anexas.</p>
+            </div>
+
+            <div class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Turma Destinatária:</label>
+                  <select id="ped-lote-turma" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                    <option value="1º - FD">1º - FD</option>
+                    <option value="1ºA ADM">1ºA ADM</option>
+                    <option value="9º Ano A">9º Ano A</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Público-Alvo:</label>
+                  <select id="ped-lote-alvo" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                    <option value="todos">Todos (Alunos e Responsáveis)</option>
+                    <option value="pais">Apenas Responsáveis</option>
+                    <option value="alunos">Apenas Alunos</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Modelos de Mensagens Prontas:</label>
+                <select id="ped-lote-modelo" onchange="aplicarModeloTextoPedagogico(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-blue-900">
+                  <option value="personalizado">-- Escrever mensagem personalizada --</option>
+                  <option value="reuniao_pais">Convocação para Reunião de Pais e Mestres</option>
+                  <option value="recuperacao">Lembrete de Início das Provas de Recuperação</option>
+                  <option value="infrequencia">Alerta Geral de Infrequência Escolar</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Texto da Mensagem:</label>
+                <textarea id="ped-lote-texto" rows="4" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs"></textarea>
+              </div>
+
+              <button onclick="dispararLotePedagogicoWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-4 h-4 text-emerald-200"></i> Disparar Comunicação em Lote via WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 3.5: INCLUSÃO & PDI -->
+        <div id="subsecao-ped-inclusao" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                  <i data-lucide="heart-handshake" class="w-4 h-4"></i> Prontuário AEE & Inclusão
+                </span>
+                <h3 class="text-xl font-black text-slate-800">Estudantes com Laudo e Plano de Adaptação (PDI)</h3>
+                <p class="text-xs text-slate-500">Gestão com upload de laudos médicos em PDF/foto e recomendações curriculares.</p>
+              </div>
+
+              <button onclick="abrirModalPdi()" class="bg-purple-900 hover:bg-purple-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+                <i data-lucide="file-plus" class="w-4 h-4 text-purple-300"></i> Novo PDI / Anexar Laudo
+              </button>
+            </div>
+
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-purple-50 text-purple-950 uppercase font-bold border-b">
+                  <tr>
+                    <th class="p-3 w-56">Estudante (CGM)</th>
+                    <th class="p-3 text-center w-28">Turma</th>
+                    <th class="p-3 text-center w-36">Tipo de Laudo</th>
+                    <th class="p-3">Orientações e PDI</th>
+                    <th class="p-3 text-center w-36">Documento Anexo</th>
+                    <th class="p-3 text-center w-28">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-inclusao-corpo" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 3.6: ATENDIMENTO EM HA (ALGORITMO DE SIMULTANEIDADE) -->
+        <div id="subsecao-ped-ha-atendimento" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div class="border-b pb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                <i data-lucide="target" class="w-4 h-4"></i> Otimização de Cronograma
+              </span>
+              <h3 class="text-xl font-black text-slate-800">Atendimento de Alunos em Horário de Atividade (HA)</h3>
+              <p class="text-xs text-slate-500">
+                O algoritmo cruza a grade semanal para identificar os momentos da semana com o <strong>maior número de professores da turma em HA simultâneo</strong>.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="text-xs font-bold text-slate-700">Selecione a Turma para Análise:</label>
+              <select id="ha-otimizacao-turma" onchange="executarAlgoritmoSimultaneidadeHA()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-blue-900">
+                <option value="1º - FD">1º - FD</option>
+                <option value="1ºA ADM">1ºA ADM</option>
+                <option value="9º Ano A">9º Ano A</option>
+                <option value="9º Ano B">9º Ano B</option>
+              </select>
+            </div>
+
+            <!-- Matriz Ranqueada de Melhores Horários -->
+            <div class="space-y-3">
+              <h4 class="text-xs font-black text-slate-700 uppercase tracking-wide">Melhores Horários Ranqueados para Alinhamento com a Turma:</h4>
+              <div id="painel-melhores-horarios-ha" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 3.7: HORÁRIO ESCOLAR (GRADE DE 6 AULAS & DESTAQUE HA) -->
+        <div id="subsecao-ped-horario" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                  <i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i> Grade Oficial de 6 Aulas
+                </span>
+                <h3 class="text-xl font-black text-slate-800">Horário Escolar & Grade Semanal</h3>
+                <p class="text-xs text-slate-500">Horários de 50 minutos com destaque chamativo nos Horários de Atividade (HA).</p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button onclick="filtrarApenasHA()" id="btn-filtro-ha" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 transition">
+                  <i data-lucide="filter" class="w-3.5 h-3.5 text-amber-600"></i> Isolar Apenas HA
+                </button>
+                <button onclick="abrirModalAdicionarHorario()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+                  <i data-lucide="plus" class="w-4 h-4 text-emerald-400"></i> Adicionar Aula na Grade
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="text-xs font-bold text-slate-700">Visualizar Turma:</label>
+              <select id="horario-filtro-turma" onchange="renderizarGradeHorarios()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold">
+                <option value="1º - FD">1º - FD (Formação Docente)</option>
+                <option value="1ºA ADM">1ºA ADM (Téc. Administração)</option>
+                <option value="9º Ano A">9º Ano A</option>
+                <option value="9º Ano B">9º Ano B</option>
+              </select>
+            </div>
+
+            <!-- Grade Semanal de 6 Aulas -->
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+              <table class="w-full text-xs text-center border-collapse">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b">
+                  <tr>
+                    <th class="p-3 w-28 border-r">Horário</th>
+                    <th class="p-3 border-r">Segunda-feira</th>
+                    <th class="p-3 border-r">Terça-feira</th>
+                    <th class="p-3 border-r">Quarta-feira</th>
+                    <th class="p-3 border-r">Quinta-feira</th>
+                    <th class="p-3">Sexta-feira</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-grade-horarios" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 3.8: CALENDÁRIO ESCOLAR 2026 -->
+        <div id="subsecao-ped-calendario" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div class="border-b pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-orange-700 flex items-center gap-1.5">
+                  <i data-lucide="calendar-days" class="w-4 h-4"></i> 200 Dias Letivos • SEED-PR
+                </span>
+                <h3 class="text-xl font-black text-slate-800">Calendário Escolar 2026 & Gestão de Eventos</h3>
+                <p class="text-xs text-slate-500">Alertas automáticos com 2 dias de antecedência para aprovação da Direção e 1 semana para professores.</p>
+              </div>
+
+              <label class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-sm transition cursor-pointer">
+                <i data-lucide="upload" class="w-4 h-4 text-emerald-400"></i> Anexar Foto / PDF do Calendário
+                <input type="file" accept=".pdf,image/*" onchange="processarUploadCalendario(event)" class="hidden">
+              </label>
+            </div>
+
+            <!-- Resumo dos 3 Trimestres de Cafelândia -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 rounded-xl border border-blue-200 bg-blue-50/60 space-y-1">
+                <span class="text-[10px] font-bold uppercase text-blue-800">1º Trimestre</span>
+                <div class="text-sm font-black text-blue-950">05/02 a 14/05/2026</div>
+                <p class="text-xs text-blue-700">63 dias letivos • Conselho: 23/05</p>
+              </div>
+              <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-1">
+                <span class="text-[10px] font-bold uppercase text-emerald-800">2º Trimestre</span>
+                <div class="text-sm font-black text-emerald-950">18/05 a 04/09/2026</div>
+                <p class="text-xs text-emerald-700">68 dias letivos • Conselho: 19/09</p>
+              </div>
+              <div class="p-4 rounded-xl border border-purple-200 bg-purple-50/60 space-y-1">
+                <span class="text-[10px] font-bold uppercase text-purple-800">3º Trimestre</span>
+                <div class="text-sm font-black text-purple-950">08/09 a 18/12/2026</div>
+                <p class="text-xs text-purple-700">69 dias letivos • Conselho: 15/12</p>
+              </div>
+            </div>
+
+            <!-- Lista de Eventos Agendados para Alertas -->
+            <div class="space-y-3 pt-2">
+              <h4 class="text-xs font-black text-slate-700 uppercase tracking-wide">Próximos Eventos com Disparo de Alerta:</h4>
+              <div id="lista-eventos-calendario" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 3.9: AULAS VAGAS POR ATESTADO -->
+        <div id="subsecao-ped-vagas" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+                  <i data-lucide="clock-alert" class="w-5 h-5 text-rose-600"></i>
+                  Turmas com Aulas Vagas (Gestão de Cobertura)
+                </h3>
+                <p class="text-xs text-slate-500">Mapeamento em tempo real das aulas desassistidas decorrentes de atestado médico docente.</p>
+              </div>
+              <button onclick="copiarEscalaAulasVagas()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Escala
+              </button>
+            </div>
+            <div id="lista-aulas-vagas-docentes" class="space-y-3"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- PÁGINA 4: PAINEL DA DIREÇÃO ESCOLAR (MASTER)                 -->
+      <!-- ============================================================ -->
+      <section id="view-direcao" class="hidden space-y-6">
+
+        <!-- SUB-SEÇÃO 4.1: RENDIMENTO ESTRATIFICADO & PROJEÇÕES DE RISCO -->
+        <div id="subsecao-dir-rendimento" class="space-y-6">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+              <div class="text-[10px] font-bold text-slate-500 uppercase">Total Estudantes Ativos</div>
+              <div id="dir-stat-total" class="text-2xl font-black text-slate-800">--</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-rose-200 bg-rose-50/30 shadow-sm">
+              <div class="text-[10px] font-bold text-rose-800 uppercase">Faltas > 25% (Crítico)</div>
+              <div id="dir-stat-faltas-criticas" class="text-2xl font-black text-rose-700">--%</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-amber-200 bg-amber-50/30 shadow-sm">
+              <div class="text-[10px] font-bold text-amber-800 uppercase">Faltas 20% a 25% (Alerta)</div>
+              <div id="dir-stat-faltas-alerta" class="text-2xl font-black text-amber-700">--%</div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-rose-200 shadow-sm">
+              <div class="text-[10px] font-bold text-rose-800 uppercase">Notas < 6.0 (Abaixo)</div>
+              <div id="dir-stat-notas-abaixo" class="text-2xl font-black text-rose-800">--%</div>
+            </div>
+          </div>
+
+          <!-- Distribuição de Notas em Intervalos de 1,0 em 1,0 -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 class="text-base font-black text-slate-800">Estratificação Acadêmica (Intervalos de 1,0 em 1,0)</h3>
+                <p class="text-xs text-slate-500">Distribuição estatística de toda a escola e por turmas.</p>
+              </div>
+              <select id="dir-rendimento-filtro-turma" onchange="renderizarRendimentoEstratificadoDirecao()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-blue-900">
+                <option value="ESCOLA_TODA">Toda a Escola</option>
+                <option value="1º - FD">1º - FD</option>
+                <option value="1ºA ADM">1ºA ADM</option>
+                <option value="9º Ano A">9º Ano A</option>
+              </select>
+            </div>
+            <div class="space-y-4" id="painel-barras-rendimento"></div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.2: ENVIO COLETIVO DA ESCOLA (DIREÇÃO) -->
+        <div id="subsecao-dir-envio-coletivo" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-2xl mx-auto">
+            <div class="border-b pb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                <i data-lucide="megaphone" class="w-4 h-4"></i> Comunicação Oficial da Direção Geral
+              </span>
+              <h3 class="text-base font-black text-slate-800">Envio Coletivo para Toda a Escola</h3>
+              <p class="text-xs text-slate-500">Comunicação via WhatsApp oficial para famílias e estudantes de todas as turmas.</p>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Seletor de Destinatários *</label>
+                <select id="dir-coletivo-alvo" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-blue-950">
+                  <option value="todos">1º Todos (Alunos e Responsáveis de Toda a Escola)</option>
+                  <option value="pais">2º Apenas Responsáveis / Famílias</option>
+                  <option value="alunos">3º Apenas Estudantes</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Título do Comunicado Oficial:</label>
+                <input type="text" id="dir-coletivo-titulo" value="Aviso Importante - Conselho de Classe e Calendário Escolar" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Mensagem Oficial:</label>
+                <textarea id="dir-coletivo-texto" rows="4" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs">Prezadas famílias e estudantes: Informamos que neste sábado realizaremos a devolutiva do Conselho de Classe e entrega de boletins. Contamos com a presença de todos.</textarea>
+              </div>
+
+              <button onclick="dispararEnvioColetivoDirecao()" class="w-full bg-purple-900 hover:bg-purple-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-4 h-4 text-emerald-400"></i> Disparar Envio Coletivo Oficial via WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.3: FILA DE APROVAÇÃO DE MENSAGENS -->
+        <div id="subsecao-dir-fila-aprovacao" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+                  <i data-lucide="clock" class="w-5 h-5 text-amber-600"></i>
+                  Fila de Aprovação de Mensagens do Calendário Escolar
+                </h3>
+                <p class="text-xs text-slate-500">Autorize os disparos pré-agendados com 2 dias de antecedência para as famílias.</p>
+              </div>
+              <button onclick="aprovarTodasMensagensPendentes()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Autorizar Todas
+              </button>
+            </div>
+            <div id="lista-mensagens-pendentes-aprovacao" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.4: CADASTRO & IMPORTAÇÃO DE SERVIDORES EM LOTE -->
+        <div id="subsecao-dir-professores-lote" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="border-b pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 class="text-base font-black text-slate-800">Cadastro e Importação de Servidores em Lote</h3>
+                <p class="text-xs text-slate-500">
+                  Campos obrigatórios: <strong>1º Nome Completo</strong>, <strong>2º Telefone (WhatsApp)</strong>, <strong>3º E-mail institucional</strong>.
+                </p>
+              </div>
+              <button onclick="exportarRelatorioServidores()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Exportar Relatório
+              </button>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <label class="block text-xs font-bold text-slate-700">Cole a lista em lote (Nome; Disciplina; Telefone; E-mail):</label>
+              <textarea id="texto-importacao-servidores" rows="3" placeholder="Exemplo: Ronnie Malagutti; Matemática; 45991516382; ronnie.malagutti@escola.pr.gov.br" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs font-mono"></textarea>
+              <button onclick="processarImportacaoServidoresLote()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition">
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-400"></i> Processar Importação em Lote
+              </button>
+            </div>
+
+            <!-- Tabela Relatório de Servidores Cadastrados -->
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b">
+                  <tr>
+                    <th class="p-3">Nome do Servidor *</th>
+                    <th class="p-3">Disciplina / Lotação</th>
+                    <th class="p-3">WhatsApp *</th>
+                    <th class="p-3">E-mail Institucional *</th>
+                    <th class="p-3 text-center">RG / CPF</th>
+                    <th class="p-3 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-servidores-cadastrados" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.5: ATRIBUIÇÃO DE CARGOS (@escola.pr) -->
+        <div id="subsecao-dir-cargos" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="border-b pb-3">
+              <h3 class="text-base font-black text-slate-800">Atribuição de Cargos & Governança de Perfis</h3>
+              <p class="text-xs text-slate-500">Todos iniciam como Professor(a). A Direção define quem possui prerrogativas de Equipe Pedagógica ou Direção.</p>
+            </div>
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b">
+                  <tr>
+                    <th class="p-3">Servidor</th>
+                    <th class="p-3">Lotação</th>
+                    <th class="p-3 text-center">Função Regimental</th>
+                    <th class="p-3 text-center">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-cargos-direcao-corpo" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.6: GRADE ESCOLAR GERAL & RELATÓRIO DE HAS NOS 2 TURNOS -->
+        <div id="subsecao-dir-horario-geral" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 class="text-base font-black text-slate-800">Relatório Consolidado de Horários de Atividade (HA)</h3>
+                <p class="text-xs text-slate-500">Mapeamento simultâneo de todos os docentes em HA nos turnos Matutino e Vespertino.</p>
+              </div>
+            </div>
+            <div id="painel-relatorio-has-dois-turnos" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.7: HORÁRIOS DA GESTÃO (PEDAGOGIA E DIREÇÃO) -->
+        <div id="subsecao-dir-horario-gestao" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 class="text-base font-black text-slate-800">Escala de Horários da Gestão Escolar</h3>
+                <p class="text-xs text-slate-500">Transparência dos horários da Equipe Pedagógica (80h) e Direção Geral.</p>
+              </div>
+            </div>
+            <div id="container-horarios-gestao-corpo" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.8: ATA OFICIAL DE DELIBERAÇÃO A4 -->
+        <div id="subsecao-dir-ata" class="hidden space-y-6">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4 no-print">
+            <div class="flex items-center gap-3">
+              <select id="ata-turma-select" onchange="gerarVisualizacaoAta()" class="bg-slate-50 border border-slate-300 text-xs font-bold rounded-lg px-3 py-2">
+                <option value="1º - FD">1º - FD</option>
+                <option value="9º Ano A">9º Ano A</option>
+              </select>
+              <select id="ata-periodo-select" onchange="gerarVisualizacaoAta()" class="bg-slate-50 border border-slate-300 text-xs font-bold rounded-lg px-3 py-2">
+                <option value="2º Trimestre" selected>2º Trimestre</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="alternarSuplementoPedagogico()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs border border-slate-300 flex items-center gap-1.5 transition">
+                <i data-lucide="lock" class="w-3.5 h-3.5 text-purple-700"></i>
+                <span id="label-toggle-suplemento">Ver Suplemento Reservado</span>
+              </button>
+              <button onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+                <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Imprimir Ata Oficial (A4)
+              </button>
+            </div>
+          </div>
+
+          <!-- ÁREA DE IMPRESSÃO DA ATA OFICIAL A4 -->
+          <div id="area-ata-oficial" class="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-sm space-y-6 text-slate-900">
+            <div class="border-b-2 border-slate-800 pb-4 flex items-center justify-between gap-4">
+              <div class="space-y-1">
+                <h2 class="text-base md:text-lg font-black uppercase tracking-wide" id="ata-titulo">
+                  ATA DE DELIBERAÇÃO DO CONSELHO DE CLASSE - 2º TRIMESTRE / 2026
+                </h2>
+                <p class="text-xs font-bold text-slate-700" id="ata-subtitulo-turma">Turma: 1º - FD</p>
+                <p class="text-[11px] text-slate-600" id="ata-nome-escola">Colégio Estadual Cívico-Militar Alberto Santos Dumont</p>
+              </div>
+              <div class="text-right text-[11px] font-mono text-slate-500">
+                <div id="ata-cabecalho-nre">Cafelândia - Paraná - SEED</div>
+                <div>Ano Letivo 2026</div>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left border-collapse border border-slate-300">
+                <thead class="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                  <tr>
+                    <th class="border border-slate-300 p-2 w-28">CGM</th>
+                    <th class="border border-slate-300 p-2">Nome do Estudante</th>
+                    <th class="border border-slate-300 p-2 text-center w-24">Freq. (%)</th>
+                    <th class="border border-slate-300 p-2 text-center w-36">Parecer Conselho</th>
+                    <th class="border border-slate-300 p-2">Deliberação, Encaminhamentos & Ações Notificadas</th>
+                  </tr>
+                </thead>
+                <tbody id="ata-corpo-tabela" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+
+            <!-- CITAÇÃO AUTOMÁTICA DAS AÇÕES PEDAGÓGICAS E COMUNICADOS DISPARADOS -->
+            <div class="p-3 bg-slate-50 border border-slate-300 rounded text-xs space-y-1">
+              <strong>Registro Circunstanciado de Ações Pedagógicas e Comunicados Oficiais:</strong>
+              <div id="ata-lista-acoes-citadas" class="text-[11px] text-slate-700 space-y-0.5"></div>
+            </div>
+
+            <div class="pt-8 grid grid-cols-2 sm:grid-cols-3 gap-6 text-center text-xs">
+              <div class="border-t border-slate-400 pt-2">
+                <span class="font-bold block" id="ata-assina-diretor">Direção Escolar</span>
+                <span class="text-[10px] text-slate-500">Direção Geral</span>
+              </div>
+              <div class="border-t border-slate-400 pt-2">
+                <span class="font-bold block" id="ata-assina-pedagogo">Coordenação Pedagógica</span>
+                <span class="text-[10px] text-slate-500">Equipe Pedagógica</span>
+              </div>
+              <div class="border-t border-slate-400 pt-2">
+                <span class="font-bold block" id="ata-assina-secretario">Secretaria Escolar</span>
+                <span class="text-[10px] text-slate-500">Livro de Atas</span>
+              </div>
+            </div>
+
+            <!-- SUPLEMENTO SIGILOSO -->
+            <div id="bloco-suplemento-pedagogico" class="hidden page-break pt-6 border-t-4 border-purple-800 space-y-4">
+              <div class="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                <h3 class="text-sm font-black text-purple-950">Suplemento de Encaminhamentos Intersetoriais (Sigilo Legal)</h3>
+                <p class="text-xs text-purple-800">Acionamentos de FICAI, Conselho Tutelar, CAPS e termos disciplinares.</p>
+              </div>
+              <div id="suplemento-lista-encaminhamentos" class="space-y-3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.9: CERTIFICADOS ESCOLARES A4 -->
+        <div id="subsecao-dir-certificados" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+              <h3 class="text-base font-black text-slate-800">Emissão de Certificados Escolares Oficiais</h3>
+              <button onclick="imprimirCertificadosEmLote()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition">
+                <i data-lucide="printer" class="w-4 h-4 text-emerald-400"></i> Imprimir Todos em Lote
+              </button>
+            </div>
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b">
+                  <tr>
+                    <th class="p-3">Estudante</th>
+                    <th class="p-3 text-center">Turma</th>
+                    <th class="p-3 text-center">Frequência</th>
+                    <th class="p-3 text-center">Menor Média</th>
+                    <th class="p-3 text-center">Categoria</th>
+                    <th class="p-3 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-certificados-corpo" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO 4.10: WHATSAPP OFICIAL -->
+        <div id="subsecao-dir-comunicacao" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-xl mx-auto">
+            <div class="border-b pb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                <i data-lucide="phone-call" class="w-4 h-4"></i> Linha Institucional Oficial
+              </span>
+              <h3 class="text-base font-black text-slate-800">WhatsApp Oficial da Escola</h3>
+              <p class="text-xs text-slate-500">Linha usada para receber atestados e assinar comunicados.</p>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Número de Envio Institucional (DDI + DDD + Número):</label>
+                <input type="text" id="cfg-whatsapp-oficial" value="5545991516382" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm font-mono font-bold text-emerald-900">
+                <span class="text-[11px] text-slate-500 block mt-1">Exibição formatada: <strong>+55 (45) 99151-6382</strong></span>
+              </div>
+              <button onclick="salvarConfiguracaoWhatsAppOficial()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i> Salvar Número Oficial
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- PÁGINA 5: CONFIGURAÇÕES E BACKUP                             -->
+      <!-- ============================================================ -->
+      <section id="view-configuracao" class="hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="border-b pb-4">
+            <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+              <i data-lucide="settings" class="w-6 h-6 text-emerald-600"></i> Configurações do Sistema
+            </h2>
+            <p class="text-xs text-slate-500">Parâmetros institucionais e exportação de backups de segurança.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Instituição Escolar</label>
+              <input type="text" id="cfg-escola" value="Colégio Estadual Cívico-Militar Alberto Santos Dumont" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Município e NRE</label>
+              <input type="text" id="cfg-municipio" value="Cafelândia - Paraná - SEED" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Período de Avaliação Atual</label>
+              <input type="text" id="cfg-periodo" value="2º Trimestre" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Professor(a) / Usuário Responsável</label>
+              <input type="text" id="cfg-professor" value="Ronnie Malagutti" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+            </div>
+          </div>
+
+          <div class="pt-4 border-t flex flex-wrap gap-3">
+            <button onclick="salvarConfiguracoes()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2">
+              <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i> Salvar Configurações
+            </button>
+            <button onclick="exportarBackupJSON()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i> Exportar Backup (JSON)
+            </button>
+            <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 cursor-pointer">
+              <i data-lucide="upload" class="w-4 h-4"></i> Restaurar Backup (JSON)
+              <input type="file" onchange="importarBackupJSON(event)" accept=".json" class="hidden">
+            </label>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAIS DO SISTEMA                                            -->
+  <!-- ============================================================ -->
+
+  <!-- MODAL: LOGIN / AUTENTICAÇÃO POR MÓDULO -->
+  <div id="modal-login-modulo" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-2 border-emerald-500 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div class="flex items-center gap-2.5">
+          <div id="modal-auth-icone" class="p-2 rounded-xl bg-blue-50 text-blue-900">
+            <i data-lucide="lock" class="w-5 h-5 text-blue-700"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black text-slate-800" id="modal-auth-titulo">Acesso ao Módulo</h3>
+            <p class="text-[11px] text-slate-500" id="modal-auth-subtitulo">Autenticação com e-mail institucional</p>
+          </div>
+        </div>
+        <button onclick="fecharModalAuthModulo()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <p class="text-xs text-slate-600">
+          Informe seu e-mail institucional <strong>(@escola.pr.gov.br)</strong> e senha para acessar este módulo:
+        </p>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">E-mail Institucional (@escola.pr.gov.br):</label>
+          <input type="email" id="auth-modulo-email" placeholder="nome.sobrenome@escola.pr.gov.br" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Senha de Acesso:</label>
+          <input type="password" id="auth-modulo-senha" placeholder="••••••••" value="seed123" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-mono">
+        </div>
+
+        <button onclick="confirmarLoginModulo()" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4 text-emerald-400"></i> Entrar e Desbloquear Módulo
+        </button>
+
+        <div class="pt-3 border-t">
+          <span class="text-[10px] font-bold text-slate-500 uppercase block mb-2">Acesso Rápido de Teste:</span>
+          <div class="space-y-1.5 text-xs">
+            <button onclick="preencherCredenciaisRapidas('ronnie.malagutti@escola.pr.gov.br', 'professor')" class="w-full text-left p-2 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 flex items-center justify-between">
+              <div>
+                <strong class="text-blue-900 block">Prof. Ronnie Malagutti (Matemática)</strong>
+                <span class="text-[10px] text-slate-500 font-mono">ronnie.malagutti@escola.pr.gov.br</span>
+              </div>
+              <span class="text-[10px] font-bold bg-blue-100 text-blue-900 px-2 py-0.5 rounded">Docente</span>
+            </button>
+
+            <button onclick="preencherCredenciaisRapidas('pedagogia.santosdumont@escola.pr.gov.br', 'pedagogo')" class="w-full text-left p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-200 flex items-center justify-between">
+              <div>
+                <strong class="text-emerald-800 block">Equipe Pedagógica (Maria Lucilene / Nely)</strong>
+                <span class="text-[10px] text-slate-500 font-mono">pedagogia.santosdumont@escola.pr.gov.br</span>
+              </div>
+              <span class="text-[10px] font-bold bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded">Pedagogia</span>
+            </button>
+
+            <button onclick="preencherCredenciaisRapidas('direcao.santosdumont@escola.pr.gov.br', 'direcao')" class="w-full text-left p-2 rounded-xl bg-slate-50 hover:bg-purple-50 border border-slate-200 flex items-center justify-between">
+              <div>
+                <strong class="text-purple-900 block">Direção Escolar</strong>
+                <span class="text-[10px] text-slate-500 font-mono">direcao.santosdumont@escola.pr.gov.br</span>
+              </div>
+              <span class="text-[10px] font-bold bg-purple-100 text-purple-900 px-2 py-0.5 rounded">Direção (Master)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HORÁRIO ESCOLAR (6 AULAS) -->
+  <div id="modal-horario-escolar" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+          <i data-lucide="clock" class="w-5 h-5 text-blue-900"></i> Adicionar Aula na Grade
+        </h3>
+        <button onclick="fecharModalHorarioEscolar()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Turma:</label>
+          <select id="horario-turma-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+            <option value="1º - FD">1º - FD</option>
+            <option value="1ºA ADM">1ºA ADM</option>
+            <option value="9º Ano A">9º Ano A</option>
+            <option value="9º Ano B">9º Ano B</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Dia da Semana:</label>
+            <select id="horario-dia-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+              <option value="segunda">Segunda-feira</option>
+              <option value="terca">Terça-feira</option>
+              <option value="quarta">Quarta-feira</option>
+              <option value="quinta">Quinta-feira</option>
+              <option value="sexta">Sexta-feira</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Aula (1ª a 6ª):</label>
+            <select id="horario-aula-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+              <option value="1">1ª Aula (07:10 - 08:00)</option>
+              <option value="2">2ª Aula (08:00 - 08:50)</option>
+              <option value="3">3ª Aula (08:50 - 09:40)</option>
+              <option value="4">4ª Aula (09:55 - 10:45)</option>
+              <option value="5">5ª Aula (10:45 - 11:35)</option>
+              <option value="6">6ª Aula (11:35 - 12:25)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Professor(a) Responsável:</label>
+          <select id="horario-prof-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"></select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Disciplina Ministrada:</label>
+          <input type="text" id="horario-disc-input" placeholder="Ex: Matemática" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+        </div>
+
+        <div class="p-3 bg-amber-50 rounded-xl border border-amber-200">
+          <label class="flex items-center gap-2 text-xs font-bold text-amber-900 cursor-pointer">
+            <input type="checkbox" id="horario-is-ha" class="rounded text-amber-600 w-4 h-4">
+            <span>Este horário é Horário de Atividade (HA livre para atendimento)</span>
+          </label>
+        </div>
+
+        <div class="pt-2">
+          <button type="button" onclick="salvarAulaGradeHorario()" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2">
+            <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i> Gravar na Grade Semanal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DO ESTUDANTE -->
+  <div id="modal-estudante" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto hidden">
+    <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 my-8">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="text-base font-black text-slate-800" id="modal-titulo">Ficha do Estudante</h3>
+        <button onclick="fecharModalEstudante()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nome Completo</label>
+            <input type="text" id="f-nome" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">CGM</label>
+            <input type="text" id="f-cgm" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Situação de Matrícula</label>
+            <select id="f-matricula" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+              <option value="Ativo">Ativo</option>
+              <option value="Transferido">Transferido</option>
+              <option value="Desistente">Desistente</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Turma</label>
+            <select id="f-turma" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+              <option value="1º - FD">1º - FD</option>
+              <option value="1ºA ADM">1ºA ADM</option>
+              <option value="9º Ano A">9º Ano A</option>
+              <option value="9º Ano B">9º Ano B</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Turno</label>
+            <select id="f-turno" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+              <option value="Matutino">Matutino</option>
+              <option value="Vespertino">Vespertino</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Laudo e Inclusão -->
+        <div class="p-3.5 bg-purple-50/70 border border-purple-200 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 text-xs font-black text-purple-900 cursor-pointer">
+              <input type="checkbox" id="f-possui-laudo" onchange="toggleCamposLaudo()" class="rounded text-purple-600 w-4 h-4">
+              <span>Possui Laudo Clínico / Atendimento Especializado (AEE)</span>
+            </label>
+          </div>
+
+          <div id="bloco-campos-laudo" class="hidden space-y-2 pt-2 border-t border-purple-200">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-purple-900 mb-1">Diagnóstico / CID</label>
+                <input type="text" id="f-tipo-laudo" placeholder="Ex: TEA (F84), TDAH, Dislexia" class="w-full bg-white border border-purple-300 rounded-xl px-3 py-1.5 text-xs">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-purple-900 mb-1">Anexo do Documento (PDF/Foto)</label>
+                <input type="file" id="f-upload-laudo" accept=".pdf,image/*" onchange="processarUploadLaudoAluno(event)" class="w-full bg-white border border-purple-300 rounded-xl px-2 py-1 text-xs">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-purple-900 mb-1">Recomendações Pedagógicas / PDI</label>
+              <input type="text" id="f-desc-laudo" placeholder="Ex: Adaptação de provas e tempo adicional." class="w-full bg-white border border-purple-300 rounded-xl px-3 py-1.5 text-xs">
+            </div>
+          </div>
+        </div>
+
+        <!-- Contato e Convocação -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Responsável</label>
+            <input type="text" id="f-resp-nome" placeholder="Nome do pai/mãe" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">WhatsApp</label>
+            <input type="text" id="f-resp-tel" placeholder="45991516382" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Horário Agendado</label>
+            <input type="text" id="f-agenda-horario" value="08:30" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+          </div>
+        </div>
+
+        <!-- Frequência -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200 items-center">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Aulas Dadas</label>
+            <input type="number" id="f-aulas" oninput="calcularFrequenciaFormulario()" value="200" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Total de Faltas</label>
+            <input type="number" id="f-faltas" oninput="calcularFrequenciaFormulario()" value="15" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Faltas Consecutivas</label>
+            <input type="number" id="f-faltas-cons" oninput="calcularFrequenciaFormulario()" value="0" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs">
+          </div>
+          <div class="text-center p-2 rounded-xl bg-white border border-slate-200">
+            <span class="text-[10px] font-bold text-slate-500 uppercase block">% Infrequência</span>
+            <span id="f-calc-perc" class="text-lg font-black text-slate-800">7.5%</span>
+          </div>
+        </div>
+
+        <!-- Componentes Curriculares -->
+        <div class="space-y-2">
+          <h4 class="font-bold text-xs uppercase tracking-wider text-blue-900 border-b pb-1">Disciplinas e Médias (0 a 100)</h4>
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-semibold">
+                <tr>
+                  <th class="p-2">Disciplina</th>
+                  <th class="p-2 text-center w-20">Recup.</th>
+                  <th class="p-2 text-center w-20">Média</th>
+                  <th class="p-2">Indicação Pedagógica</th>
+                </tr>
+              </thead>
+              <tbody id="f-tabela-disciplinas" class="divide-y divide-slate-200"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Deliberação do Conselho -->
+        <div class="space-y-2 bg-blue-50/50 p-3 rounded-2xl border border-blue-200">
+          <h4 class="font-bold text-xs uppercase tracking-wider text-blue-900">Deliberação do Conselho</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <select id="f-delib-status" class="w-full bg-white border border-blue-300 rounded-xl px-3 py-2 text-xs font-bold">
+                <option value="Aprovado">Aprovado / Regular</option>
+                <option value="Em Acompanhamento Pedagógico">Em Acompanhamento Pedagógico</option>
+                <option value="Risco de Evasão/Reprovação">Risco de Evasão / Reprovação</option>
+                <option value="Retido">Retido</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <input type="text" id="f-delib-plano" placeholder="Plano de intervenção pedagógica..." class="w-full bg-white border border-blue-300 rounded-xl px-3 py-2 text-xs">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-100 rounded-b-3xl flex justify-between items-center border-t border-slate-200">
+        <button type="button" id="btn-excluir-estudante" onclick="excluirEstudanteAtual()" class="text-rose-600 hover:text-rose-800 text-xs font-bold flex items-center gap-1.5">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir
+        </button>
+        <div class="flex gap-2">
+          <button type="button" onclick="fecharModalEstudante()" class="bg-white hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl border border-slate-300">
+            Cancelar
+          </button>
+          <button type="button" id="btn-salvar-modal-aluno" onclick="salvarEstudanteModal()" class="bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md flex items-center gap-1.5">
+            <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i> Salvar Estudante
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VISUALIZADOR DE CERTIFICADO EM FOLHA A4 -->
+  <div id="modal-visualizar-certificado" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto hidden">
+    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-8">
+      <div class="flex items-center justify-between border-b pb-3 no-print">
+        <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+          <i data-lucide="award" class="w-5 h-5 text-yellow-600"></i> Visualização do Certificado Oficial (A4)
+        </h3>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5">
+            <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Certificado
+          </button>
+          <button onclick="fecharModalCertificado()" class="text-slate-400 hover:text-slate-600 p-1">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="area-certificado-impressao" class="p-8 md:p-12 border-8 border-double border-yellow-600 rounded-2xl bg-gradient-to-b from-amber-50/40 via-white to-amber-50/30 text-center space-y-6">
+        <div class="flex items-center justify-center gap-4 border-b-2 border-yellow-600/40 pb-4">
+          <img src="logo-rm.jpg" alt="Logo" class="w-16 h-16 rounded-full border-2 border-yellow-600 object-cover">
+          <div>
+            <h4 class="font-certificate text-base md:text-lg font-black tracking-widest text-slate-900 uppercase" id="cert-escola-nome">
+              COLÉGIO ESTADUAL CÍVICO-MILITAR ALBERTO SANTOS DUMONT
+            </h4>
+            <p class="text-xs font-semibold text-slate-600 uppercase tracking-wider" id="cert-municipio">
+              Cafelândia - Paraná - SEED
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <span class="text-xs font-black tracking-widest uppercase text-yellow-800">RECONHECIMENTO DE MÉRITO ACADÊMICO</span>
+          <h2 class="font-certificate text-2xl md:text-4xl font-black text-yellow-900 tracking-wider" id="cert-titulo-categoria">
+            CERTIFICADO ALUNO OURO
+          </h2>
+          <div class="flex justify-center text-yellow-500 text-xl tracking-widest">★★★★★</div>
+        </div>
+
+        <div class="max-w-2xl mx-auto space-y-3 py-2 text-slate-800 text-sm md:text-base leading-relaxed">
+          <p>Conferimos com honra e distinção ao(à) dedicado(a) estudante:</p>
+          <div class="text-xl md:text-2xl font-black text-blue-950 uppercase border-b border-slate-400 inline-block pb-1 px-6" id="cert-nome-aluno">
+            NOME DO ESTUDANTE
+          </div>
+          <p class="text-xs font-mono font-bold text-slate-600" id="cert-dados-turma">Turma: 1º - FD • CGM: 000000000</p>
+          <p class="text-xs md:text-sm font-medium text-slate-700 italic pt-2" id="cert-texto-honra">
+            Pelo desempenho acadêmico de excelência máxima, postura exemplar e dedicação aos estudos.
+          </p>
+        </div>
+
+        <div class="pt-8 grid grid-cols-2 gap-8 max-w-xl mx-auto text-xs text-slate-700">
+          <div class="border-t border-slate-600 pt-1">
+            <span class="font-bold block text-slate-900" id="cert-assina-direcao">Direção Escolar</span>
+            <span class="text-[10px] text-slate-500">Direção Geral</span>
+          </div>
+          <div class="border-t border-slate-600 pt-1">
+            <span class="font-bold block text-slate-900" id="cert-assina-pedagogia">Coordenação Pedagógica</span>
+            <span class="text-[10px] text-slate-500">Equipe Pedagógica</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Principal da Aplicação -->
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
